@@ -1,30 +1,46 @@
+# This program goes through a folder selected by the user and creates different
+# Analysis files, such as the categories present in only one city, the max deviation
+# per category, a binary coverage matrix, a spearman correlation matrix and a jaccard matrix
+# make sure to change the summaries_directory, and output_path when you use this program
+
 import pandas as pd
+import os
 
-#Loads each csv file into a dataframe
-torontoCat = pd.read_csv('toronto_category_summary.csv')
-ottawaCat = pd.read_csv('ottawa_category_summary.csv')
-montrealCat = pd.read_csv('montreal_category_summary.csv')
-edmontonCat = pd.read_csv('edmonton_category_summary.csv')
+#This is the folder where the category summaries are located, make sure you
+#change this 
+summaries_directory = "/Users/magicsquirrel/Developer/workstudy/category_summaries/australian"
 
-#Converts each dataframe into sets for easy comparison
-torontoSet = set(torontoCat['Category'])
-ottawaSet = set(ottawaCat['Category'])
-montrealSet = set(montrealCat['Category'])
-edmontonSet = set(edmontonCat['Category'])
+#This creates a list of all the names of the summary.csv files
+summary_files = [
+    file for file in os.listdir(summaries_directory)
+    if file.endswith('_category_summary.csv')
+]
 
-#This finds all the categories that are unique to each city
-torontoUnique = torontoSet - (ottawaSet | montrealSet | edmontonSet)
-ottawaUnique = ottawaSet - (torontoSet | montrealSet | edmontonSet)
-montrealUnique = montrealSet - (ottawaSet | torontoSet | edmontonSet)
-edmontonUnique =  edmontonSet - (ottawaSet | montrealSet | torontoSet)
+city_data = {}
+city_sets = {}
 
-pd.DataFrame({'Unique_Category': sorted(torontoUnique)}).to_csv('toronto_unique_categories.csv', index=False)
-pd.DataFrame({'Unique_Category': sorted(ottawaUnique)}).to_csv('ottawa_unique_categories.csv', index=False)
-pd.DataFrame({'Unique_Category': sorted(montrealUnique)}).to_csv('montreal_unique_categories.csv', index=False)
-pd.DataFrame({'Unique_Category': sorted(edmontonUnique)}).to_csv('edmonton_unique_categories.csv', index=False)
+#This goes through the whole folder and adds each summary csv file into 2 dictionaries
+#one that contains all the dataframes, and one that contains all the category data as a set
+for file in summary_files:
+    city = file.split("_")[0].capitalize()
+    df = pd.read_csv(os.path.join(summaries_directory, file))
+    city_data[city] = df
+    city_sets[city] = set(df['Category'])
+
+#Creates a list of the city names
+city_names = list(city_data.keys())
+
+#This iterates through every city in the list of cities and finds their unique categories
+for city in city_names:
+    #This finds the union of the categories from cities that isn't the current city
+    other_categories = set().union(*(city_sets[c] for c in city_names if c != city))
+    #This finds the categories that are unique to this city
+    unique_categories = sorted(city_sets[city] - other_categories)
+    output_path = os.path.join('unique_categories', f"{city.lower()}_unique_categories.csv")
+    pd.DataFrame({'Unique_category': unique_categories}).to_csv(output_path, index=False)
 
 #Combines all the tables together
-combinedTable = pd.concat([torontoCat, ottawaCat, montrealCat, edmontonCat], ignore_index=True)
+combinedTable = pd.concat(city_data.values(), ignore_index=True)
 
 #Changes the table so that the categories are used to index the table and the columns
 #display the count and percentage of each category for each city
@@ -43,7 +59,9 @@ filteredTable['Max Deviation'] = filteredTable.max(axis=1) - filteredTable.min(a
 #Sorts the table based on descending order
 filteredTable = filteredTable.sort_values(by='Max Deviation', ascending=False)
 
-filteredTable.to_csv("max_deviation_category_comparison.csv", index=True)
+output_path = os.path.join('australian_city_comparison', "max_deviation_category_comparison.csv")
+
+filteredTable.to_csv(output_path, index=True)
     
     
     
@@ -65,12 +83,25 @@ group2 = grouped.get_group(2)
 group3 = grouped.get_group(3)
 group4 = grouped.get_group(4)
 
-binaryCoverageMatrix.to_csv("binary_coverage_matrix_of_categories.csv", index=True)
+output_path = os.path.join('australian_city_comparison', "binary_coverage_matrix_of_categories.csv")
 
-group1.to_csv("categories_in_1_city.csv", index=True)
-group2.to_csv("categories_in_2_cities.csv", index=True)
-group3.to_csv("categories_in_3_cities.csv", index=True)
-group4.to_csv("categories_in_4_cities.csv", index=True)
+binaryCoverageMatrix.to_csv(output_path, index=True)
+
+output_path = os.path.join('australian_city_comparison', "categories_in_1_city.csv")
+
+group1.to_csv(output_path, index=True)
+
+output_path = os.path.join('australian_city_comparison', "categories_in_2_city.csv")
+
+group2.to_csv(output_path, index=True)
+
+output_path = os.path.join('australian_city_comparison', "categories_in_3_city.csv")
+
+group3.to_csv(output_path, index=True)
+
+output_path = os.path.join('australian_city_comparison', "categories_in_4_city.csv")
+
+group4.to_csv(output_path, index=True)
 
 
 #This creates a Spearman ranked correlation table based on the data
@@ -79,29 +110,22 @@ pivotTable2Clean = pivotTable2.dropna()
 rankedTable2 = pivotTable2.rank(ascending=False)
 spearmanCorrelation = rankedTable2.corr(method='spearman')
 
-spearmanCorrelation.to_csv("spearman_correlation_common_categories.csv", index=True)
+output_path = os.path.join('australian_city_comparison', "spearman_correlation_common_categories.csv")
+
+spearmanCorrelation.to_csv(output_path, index=True)
 
 #This section creates a jaccard matrix out of the data
 def jaccard(city1, city2):
     return len(city1 & city2)/len(city1 | city2)
 
-#Creates a dictionary out of the sets
-city_sets = {
-    'Toronto': torontoSet,
-    'Ottawa': ottawaSet,
-    'Montreal': montrealSet,
-    'Edmonton': edmontonSet
-}
-
-#Creates a list of the cities present
-cities = city_sets.keys()
 
 #Creates an empty dataframe for the jaccard matrix which figures out the percentage
 #of categories that are shared between the cities
-jaccardMatrix = pd.DataFrame(index=cities, columns=cities)
+jaccardMatrix = pd.DataFrame(index=city_names, columns=city_names)
 
-for city1 in cities:
-    for city2 in cities:
+for city1 in city_names:
+    for city2 in city_names:
         jaccardMatrix.loc[city1, city2] = jaccard(city_sets[city1], city_sets[city2])
         
-jaccardMatrix.to_csv("jaccard_matrix.csv", index=True)
+output_path = os.path.join('australian_city_comparison', "jaccard_matrix.csv")
+jaccardMatrix.to_csv(output_path, index=True)
