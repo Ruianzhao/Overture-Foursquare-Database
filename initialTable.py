@@ -1,11 +1,15 @@
-# This program allows you to input a parquet file of a city and it will
-# convert it into a .csv file, then it creates a table with the different categories
-# and the amount they show up and exports it as a .csv file.
+# This program allows you to chose a folder on your computer, and it will scan the 
+# folder for parquet files, convert it into a .csv file, then it creates a table with
+# the different categories and the amount they show up and exports it as a .csv file.
+# Make sure you change the input folder, and output folder locations in the code
+# before using it
 
 #Use pandas to read parquet files
 import pandas as pd
 
 from collections import Counter
+
+import os
 
 
 #Function that will create a table with the number and percentage that each
@@ -27,31 +31,34 @@ def generateCategoryTable(df, cityName):
     outputTable.index.name = 'Category'
     outputTable = outputTable.reset_index()
     outputTable = outputTable.assign(Percentage= lambda counts: (counts['Count']/sum(categoriesAndCount.values()) * 100))
+    outputTable = outputTable.assign(City= cityName)
     
     #Orders the tables so the categories with the highest counts are at the top
     outputTable = outputTable.sort_values(by='Count', ascending=False)
     
+    #Ensures the output path is the category_summaries folder make sure you change
+    #this if you have a different folder
+    output_path = os.path.join('category_summaries', f"{cityName.lower()}_category_summary.csv")
     #Export to .csv
-    outputTable.to_csv(f"{cityName.lower()}_category_summary.csv", index=False)
+    outputTable.to_csv(output_path, index=False)
 
-#Load the parquet file
-toronto_places = pd.read_parquet('toronto_places.parquet', engine='auto')
+#The path where all the parquet files are kept, remember to change this if you are
+#using this code
+folder_path = "/Users/magicsquirrel/Developer/workstudy/parquet_files"
 
-montreal_places = pd.read_parquet('montreal_places.parquet', engine='auto')
+#Iterates through all the parquet files in the folder and generates their
+#raw csv, and category summaries
+for file in os.listdir(folder_path):
+    if file.endswith('.parquet'):
+        file_path = os.path.join(folder_path, file)
+         # gets 'toronto' from 'toronto_places.parquet' only works if file name is
+         # in the form city_places.parquet
+        city_name = file.split('_')[0].lower() 
+        df = pd.read_parquet(file_path, engine='auto')
+        
+        #Ensures that the output path is the raw_city_files folder, remember to change
+        #this if you have a different folder
+        output_path = os.path.join('raw_city_files', f"{city_name}_places.csv")
+        df.to_csv(output_path, index=False)
+        generateCategoryTable(df, city_name)
 
-edmonton_places = pd.read_parquet('edmonton_places.parquet', engine='auto')
-
-ottawa_places = pd.read_parquet('ottawa_places.parquet', engine='auto')
-#Creates a csv file for the toronto places
-toronto_places.to_csv('toronto_places.csv', index=False)
-
-montreal_places.to_csv('montreal_places.csv', index=False)
-
-edmonton_places.to_csv('edmonton_places.csv', index=False)
-
-ottawa_places.to_csv('ottawa_places.csv', index=False)
-
-generateCategoryTable(toronto_places, "toronto")
-generateCategoryTable(edmonton_places, "edmonton")
-generateCategoryTable(montreal_places, "montreal")
-generateCategoryTable(ottawa_places, "ottawa")
