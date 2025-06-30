@@ -1,77 +1,69 @@
 import os
 import osmnx as ox
 import rasterio
-import rasterio.mask
+from rasterio.mask import mask
 import geopandas as gpd
 import pandas as pd
 import numpy as np
 from shapely.geometry import mapping
 
 # Folder containing your GeoTIFF files
-folder_path = "/Users/magicsquirrel/Developer/workstudy/radiance_tif_files"
+folder_path = "/Users/magicsquirrel/Developer/workstudy/radiance_harmony_files"
 
 # Dictionary for each city, and what the OSM query will be
 city_queries = {
-    "Toronto": "Financial District, Toronto, Ontario, Canada",
-    "Sydney": "Sydney CBD, New South Wales, Australia",
-    "Beijing": "Dongcheng, Beijing, China"
+    "Toronto": "Toronto, Canada",
+    "Sydney": "Sydney, Australia",
+    "Beijing": "Beijing, China"
 }
 
-# Dictionary to store the data from each city in each year
-results = {city: [] for city in city_queries}
+for city_name, query in city_queries.items():
+    city_poly = ox.geocode_to_gdf(query)
+    
+    city_results = []
 
-for file in os.listdir(folder_path):
-    if file.endswith(".tif"):
-        year = file.split('_')[-1].replace(".tif", "")
-        file_path = os.path.join(folder_path, file)
+    for file in os.listdir(folder_path):
+        if file.endswith(".tif"):
+            #year = file.split('_')[-1].replace(".tif", "")
+            year = file.split('_')[3]
+            file_path = os.path.join(folder_path, file)
 
-        with rasterio.open(file_path) as src:
-            raster_crs = src.crs
+            try:
+                with rasterio.open(file_path) as src:
+                    # Reproject city boundary to match raster coordinate system
+                    city_poly_proj = city_poly.to_crs(src.crs)
 
-            # Loops through all the cities and tries to use OSM queries
-            # To find the bounding polygon
-            for city, query in city_queries.items():
-                try:
-                    # Query OSM and retrieve the polygon boundary of each cities 
-                    # specified region
-                    gdf = ox.geocode_to_gdf(query)
-                    
-                    # Reproject the polygon to the rasters image's coordinate system
-                    gdf = gdf.to_crs(raster_crs)
-                    
-                    # Convert the polygon geometry to a GeoJSON format for masking
-                    geom = [mapping(gdf.geometry.iloc[0])]
-
-                    # Crop the raster to the city polygon
-                    masked, _ = rasterio.mask.mask(src, geom, crop=True)
-                    
-                    #Extract the radiance values, and remove radiance values of 0
-                    data = masked[0]
-                    data = np.ma.masked_where(data <= 0, data)
+                    # Use the mask function to crop the raster to the city polygon
+                    out_image, _ = mask(src, city_poly_proj.geometry, crop=True)
+                    data = out_image[0]
+                    # Drop any data points where the radiance is below 0
+                    masked = np.ma.masked_where(data <= 0, data)
 
                     stats = {
-                        "year": int(year),
-                        "sum": float(data.sum()),
-                        "mean": float(data.mean()),
-                        "min": float(data.min()),
-                        "max": float(data.max()),
-                        "count": int(data.count())
-                    }
-                except Exception as e:
-                    stats = {
-                        "year": int(year),
-                        "sum": None,
-                        "mean": None,
-                        "min": None,
-                        "max": None,
-                        "count": 0,
-                        "error": str(e)
+                        "year": year,
+                        "sum": float(masked.sum()),
+                        "mean": float(masked.mean()),
+                        "median": float(np.ma.median(masked)),
+                        "min": float(masked.min()),
+                        "max": float(masked.max()),
+                        "count": int(masked.count())
                     }
 
-                results[city].append(stats)
+            except Exception as e:
+                stats = {
+                    "year": year,
+                    "sum": None,
+                    "mean": None,
+                    "median": None,
+                    "min": None,
+                    "max": None,
+                    "count": None,
+                    "error": str(e)
+                }
 
-# Export CSVs per city
-for city, data in results.items():
-    df = pd.DataFrame(data).sort_values("year")
+            city_results.append(stats)
+
+    # Save CSV
+    df = pd.DataFrame(city_results).sort_values("year")
     df.set_index("year", inplace=True)
-    df.to_csv(f"{city.lower()}_downtown_ntl_summary.csv")
+    df.to_csv(f"{city_name.lower()}_ntl_summary_osm_harmony_1992-2020.csv")
