@@ -9,11 +9,14 @@ import numpy as np
 # Folder containing your GeoTIFF files
 folder_path = "/Users/magicsquirrel/Developer/workstudy/radiance_tif_files"
 
+output_folder = "/Users/magicsquirrel/Developer/workstudy/radiance_OSM/landuse"
+
 # Dictionary for each city, and what the OSM query will be
 city_queries = {
-    "Toronto": "Toronto, Canada",
-    "Sydney": "Sydney, Australia",
-    "Beijing": "Beijing, China"
+    "Beijing": "Beijing, China",
+    "Tianjin": "Tianjin, China",
+    "Shanghai": "Shanghai, China",
+    "Chengdu": "Chengdu, China"
 }
 
 for city_name, query in city_queries.items():
@@ -22,7 +25,7 @@ for city_name, query in city_queries.items():
     city_poly = ox.geocode_to_gdf(query)
 
     # Query industrial and commercial land use areas from OSM
-    tags = {'landuse': ['industrial', 'commercial']}
+    tags = {'landuse': ['industrial', 'commercial', 'education', 'construction', 'industrial', 'residential', 'retail', 'institutional', 'fairground']}
     landuse_gdf = ox.features_from_place(query, tags=tags)
 
     if landuse_gdf.empty or landuse_gdf.geometry.is_empty.all():
@@ -65,17 +68,31 @@ for city_name, query in city_queries.items():
 
                 # Drop radiance ≤ 3.5
                 masked = np.ma.masked_where(data <= 3.5, data)
+                
+                valid_data = masked.compressed()
+                
+                if len(valid_data) > 0:
+                    lower = np.percentile(valid_data, 0.5)
+                    upper = np.percentile(valid_data, 99.93)
+                    
+                    trimmed = np.ma.masked_outside(data, lower, upper)
 
-                stats = {
-                    "year": year,
-                    "sum": float(masked.sum()),
-                    "mean": float(masked.mean()),
-                    "median": float(np.ma.median(masked)),
-                    "min": float(masked.min()),
-                    "max": float(masked.max()),
-                    "count": int(masked.count())
-                }
-
+                    stats = {
+                        "year": year,
+                        "sum": float(trimmed.sum()),
+                        "mean": float(trimmed.mean()),
+                        "median": float(np.ma.median(trimmed)),
+                        "min": float(trimmed.min()),
+                        "max": float(trimmed.max()),
+                        "count": int(trimmed.count())
+                    }
+                else:
+                    stats = {
+                        "year": year,
+                        "sum": None, "mean": None, "median": None,
+                        "min": None, "max": None, "count": None,
+                        "error": str(e)
+                    }
         except Exception as e:
             stats = {
                 "year": year,
@@ -89,4 +106,4 @@ for city_name, query in city_queries.items():
     # Save results to CSV
     df = pd.DataFrame(city_results).sort_values("year")
     df.set_index("year", inplace=True)
-    df.to_csv(f"{city_name.lower()}_ntl_summary_osm_landuse_1992-2020.csv")
+    df.to_csv(f"{output_folder}/{city_name.lower()}_ntl_summary_osm_landuse_1992-2020.csv")
