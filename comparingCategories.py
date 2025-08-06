@@ -5,10 +5,11 @@
 
 import pandas as pd
 import os
+import csv
 
 #This is the folder where the category summaries are located, make sure you
 #change this 
-summaries_directory = "/Users/magicsquirrel/Developer/workstudy/category_summaries/australian"
+summaries_directory = "/Users/magicsquirrel/Developer/workstudy/places foursquare/Canadian/truncated_cat_summary"
 
 #This creates a list of all the names of the summary.csv files
 summary_files = [
@@ -22,7 +23,7 @@ city_sets = {}
 #This goes through the whole folder and adds each summary csv file into 2 dictionaries
 #one that contains all the dataframes, and one that contains all the category data as a set
 for file in summary_files:
-    city = file.split("_")[0].capitalize()
+    city = file.removesuffix('truncated_category_summary.csv').capitalize()
     df = pd.read_csv(os.path.join(summaries_directory, file))
     city_data[city] = df
     city_sets[city] = set(df['Category'])
@@ -36,8 +37,9 @@ for city in city_names:
     other_categories = set().union(*(city_sets[c] for c in city_names if c != city))
     #This finds the categories that are unique to this city
     unique_categories = sorted(city_sets[city] - other_categories)
-    output_path = os.path.join('unique_categories', f"{city.lower()}_unique_categories.csv")
-    pd.DataFrame({'Unique_category': unique_categories}).to_csv(output_path, index=False)
+    output_path = os.path.join('places foursquare/Canadian/unique_categories', f"{city.lower()}_unique_categories.csv")
+    os.makedirs('places foursquare/Canadian/unique_categories', exist_ok=True)
+    pd.DataFrame({'Unique_category': unique_categories}).to_csv(output_path, index=False, quoting=1)
 
 #Combines all the tables together
 combinedTable = pd.concat(city_data.values(), ignore_index=True)
@@ -59,7 +61,8 @@ filteredTable['Max Deviation'] = filteredTable.max(axis=1) - filteredTable.min(a
 #Sorts the table based on descending order
 filteredTable = filteredTable.sort_values(by='Max Deviation', ascending=False)
 
-output_path = os.path.join('australian_city_comparison', "max_deviation_category_comparison.csv")
+output_path = os.path.join('places foursquare/Canadian/city_comparison', "max_deviation_category_comparison.csv")
+os.makedirs('places foursquare/Canadian/city_comparison', exist_ok=True)
 
 filteredTable.to_csv(output_path, index=True)
     
@@ -83,23 +86,24 @@ group2 = grouped.get_group(2)
 group3 = grouped.get_group(3)
 group4 = grouped.get_group(4)
 
-output_path = os.path.join('australian_city_comparison', "binary_coverage_matrix_of_categories.csv")
+output_path = os.path.join('places foursquare/Canadian/city_comparison', "binary_coverage_matrix_of_categories.csv")
+os.makedirs('places foursquare/Canadian/city_comparison', exist_ok=True)
 
 binaryCoverageMatrix.to_csv(output_path, index=True)
 
-output_path = os.path.join('australian_city_comparison', "categories_in_1_city.csv")
+output_path = os.path.join('places foursquare/Canadian/city_comparison', "categories_in_1_country.csv")
 
 group1.to_csv(output_path, index=True)
 
-output_path = os.path.join('australian_city_comparison', "categories_in_2_city.csv")
+output_path = os.path.join('places foursquare/Canadian/city_comparison', "categories_in_2_country.csv")
 
 group2.to_csv(output_path, index=True)
 
-output_path = os.path.join('australian_city_comparison', "categories_in_3_city.csv")
+output_path = os.path.join('places foursquare/Canadian/city_comparison', "categories_in_3_country.csv")
 
 group3.to_csv(output_path, index=True)
 
-output_path = os.path.join('australian_city_comparison', "categories_in_4_city.csv")
+output_path = os.path.join('places foursquare/Canadian/city_comparison', "categories_in_4_country.csv")
 
 group4.to_csv(output_path, index=True)
 
@@ -110,7 +114,7 @@ pivotTable2Clean = pivotTable2.dropna()
 rankedTable2 = pivotTable2.rank(ascending=False)
 spearmanCorrelation = rankedTable2.corr(method='spearman')
 
-output_path = os.path.join('australian_city_comparison', "spearman_correlation_common_categories.csv")
+output_path = os.path.join('places foursquare/Canadian/city_comparison', "spearman_correlation_common_categories.csv")
 
 spearmanCorrelation.to_csv(output_path, index=True)
 
@@ -126,6 +130,6 @@ jaccardMatrix = pd.DataFrame(index=city_names, columns=city_names)
 for city1 in city_names:
     for city2 in city_names:
         jaccardMatrix.loc[city1, city2] = jaccard(city_sets[city1], city_sets[city2])
-        
-output_path = os.path.join('australian_city_comparison', "jaccard_matrix.csv")
+
+output_path = os.path.join('places foursquare/Canadian/city_comparison', "jaccard_matrix.csv")
 jaccardMatrix.to_csv(output_path, index=True)
