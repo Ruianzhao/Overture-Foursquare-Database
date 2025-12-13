@@ -5,7 +5,7 @@ import os
 import numpy as np
 
 # Folder Path, change when you use the code
-folder_path = "/Users/magicsquirrel/Developer/workstudy/radiance_tif_files"
+folder_path = ""
 
 # Dictionary of target cities with lat/lon
 cities = {
