@@ -7,9 +7,9 @@ import pandas as pd
 import numpy as np
 
 # Folder containing your GeoTIFF files
-folder_path = "/Users/magicsquirrel/Developer/workstudy/radiance_tif_files"
+folder_path = ""
 
-output_folder = "/Users/magicsquirrel/Developer/workstudy/radiance_OSM/landuse"
+output_folder = ""
 
 # Dictionary for each city, and what the OSM query will be
 city_queries = {
