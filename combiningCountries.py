@@ -5,7 +5,7 @@ import pandas as pd
 import os
 
 #This is the folder with all the category summaries, make sure to change this
-folderPath = "/Users/magicsquirrel/Developer/workstudy/category_summaries/china"
+folderPath = ""
 
 #This creates a list with all the category summary files
 summary_files = [
