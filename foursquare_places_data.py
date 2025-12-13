@@ -50,7 +50,7 @@ def generateCategoryTable(df1, df2, cityName):
     level3_counts.to_csv(output_path3, index=False)
     df2_counts.to_csv(output_path4, index=False)
 
-folder_path = "/Users/magicsquirrel/Developer/workstudy/places foursquare/Canadian/parquet_files"
+folder_path = ""
 
 # Iterates through all the parquet files in the folder and generates their
 # raw csv, and category summaries
