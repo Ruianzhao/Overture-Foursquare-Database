@@ -44,7 +44,7 @@ def generateCategoryTable(df, cityName):
 
 #The path where all the parquet files are kept, remember to change this if you are
 #using this code
-folder_path = "/Users/magicsquirrel/Developer/workstudy/parquet_files"
+folder_path = ""
 
 #Iterates through all the parquet files in the folder and generates their
 #raw csv, and category summaries
