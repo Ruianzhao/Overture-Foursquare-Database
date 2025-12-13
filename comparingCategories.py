@@ -9,7 +9,7 @@ import csv
 
 #This is the folder where the category summaries are located, make sure you
 #change this 
-summaries_directory = "/Users/magicsquirrel/Developer/workstudy/places foursquare/Canadian/truncated_cat_summary"
+summaries_directory = ""
 
 #This creates a list of all the names of the summary.csv files
 summary_files = [
