@@ -7,11 +7,11 @@ import numpy as np
 
 
 # Path to the GHSL Urban Centre GPKG file and the appropriate theme layer
-ghsl_path = "/Users/magicsquirrel/Developer/workstudy/city_shapefiles/GHS_UCDB_GLOBE_R2024A.gpkg"
+ghsl_path = ""
 ghsl_layer = "GHS_UCDB_THEME_GENERAL_CHARACTERISTICS_GLOBE_R2024A"
 
 # Directory containing your .tif nighttime light rasters
-tif_folder = "/Users/magicsquirrel/Developer/workstudy/radiance_tif_files"
+tif_folder = ""
 
 # City names mapped to their GHSL "GC_UCN_MAI_2025" field
 target_cities = {
